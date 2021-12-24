@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Photos
 
 class MZImageBrowsingController: UIViewController, UIViewControllerTransitioningDelegate, UIScrollViewDelegate {
     
@@ -29,6 +30,18 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
         scrollView.contentSize = CGSize(width: (20 + SCREEN__WIDTH) * CGFloat((self.imageViewList == nil ? self.imageUrlList?.count : self.imageViewList?.count)!), height: SCREEN__HEIGHT)
         scrollView.isPagingEnabled = true
         scrollView.isDirectionalLockEnabled = true
+        
+        let tap = UITapGestureRecognizer.init(target: self, action: #selector(back))
+        scrollView.addGestureRecognizer(tap)
+        
+        let doubleTap = UITapGestureRecognizer.init(target: self, action: #selector(scaleOrReset))
+        doubleTap.numberOfTapsRequired = 2
+        scrollView.addGestureRecognizer(doubleTap)
+        tap.require(toFail: doubleTap)
+        
+        let longTap = UILongPressGestureRecognizer.init(target: self, action: #selector(saveImage))
+        scrollView.addGestureRecognizer(longTap)
+        
         return scrollView
     }()
     
@@ -90,12 +103,6 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
                 scrollView.contentInsetAdjustmentBehavior = .never
             }
             
-            let containerView = UIView.init(frame: CGRect(x: 0, y: 0, width: SCREEN__WIDTH, height: SCREEN__HEIGHT))
-            scrollView.addSubview(containerView)
-            
-            let tap = UITapGestureRecognizer.init(target: self, action: #selector(back))
-            containerView.addGestureRecognizer(tap)
-            
             if let list = self.imageViewList {
                 let tempImageView = list[i]
                 let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: SCREEN__WIDTH, height: SCREEN__WIDTH * (tempImageView.image?.size.height)! / (tempImageView.image?.size.width)!))
@@ -103,15 +110,12 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
                     imageView.center = CGPoint(x: SCREEN__WIDTH / 2, y: SCREEN__HEIGHT / 2)
                     scrollView.contentSize = CGSize(width: SCREEN__WIDTH, height: SCREEN__HEIGHT)
                 } else {
-                    var frame = containerView.frame
-                    frame.size.height = imageView.frame.height
-                    containerView.frame = frame
                     scrollView.contentSize = CGSize(width: SCREEN__WIDTH, height: imageView.frame.height)
                 }
                 imageView.contentMode = .scaleAspectFill
                 imageView.clipsToBounds = true
                 imageView.image = tempImageView.image
-                containerView.addSubview(imageView)
+                scrollView.addSubview(imageView)
                 
                 if i == self.currentIndex {
                     self.showImageView.image = tempImageView.image
@@ -123,8 +127,8 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
                 let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: SCREEN__WIDTH, height: SCREEN__HEIGHT))
                 imageView.contentMode = .scaleAspectFill
                 imageView.clipsToBounds = true
-                containerView.addSubview(imageView)
-                self.downloadImage(url: url, imageView: imageView, scrollView: scrollView, containerView: contentView)
+                scrollView.addSubview(imageView)
+                self.downloadImage(url: url, imageView: imageView, scrollView: scrollView)
                 
                 if i == self.currentIndex {
                     self.showImageView.image = self.currentImageView?.image
@@ -140,12 +144,53 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
         self.dismiss(animated: true, completion: nil)
     }
     
-    @objc private func zoom(_ pinch: UIPinchGestureRecognizer) {
-        let scrollView = pinch.view?.superview as! UIScrollView
-        scrollView.zoomScale = pinch.scale
+    @objc private func scaleOrReset(_ tap: UITapGestureRecognizer) {
+        let scrollView = self.contentView.viewWithTag(100 + self.currentIndex!) as! UIScrollView
+        if scrollView.zoomScale < 1.5 {
+            scrollView.setZoomScale(2, animated: true)
+        } else {
+            scrollView.setZoomScale(1, animated: true)
+        }
     }
     
-    func downloadImage(url: String, imageView: UIImageView, scrollView: UIScrollView, containerView: UIView) {
+    @objc private func saveImage() {
+        let image = self.showImageView.image!
+        let controller = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+        controller.completionWithItemsHandler = {(_ activityType: UIActivity.ActivityType?, _ completed: Bool, _ returnedItems: [Any]?, _ activityError: Error?) -> Void in
+            if activityType == .saveToCameraRoll {
+                if completed {
+                    let alert = UIAlertController.init(title: nil, message: "存储成功", preferredStyle: .alert)
+                    self.present(alert, animated: true) {
+                        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 2) {
+                            alert.dismiss(animated: true, completion: nil)
+                        }
+                    }
+                } else {
+                    let alert = UIAlertController.init(title: "存储失败", message: "请打开 设置-隐私-照片 来进行设置", preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "确定", style: .cancel, handler: { action in
+                        alert.dismiss(animated: true, completion: nil)
+                    }))
+                    self.present(alert, animated: true, completion: nil)
+                }
+            }
+        }
+        controller.excludedActivityTypes = [
+            .addToReadingList,
+            .postToFacebook,
+            .postToTwitter,
+            .copyToPasteboard,
+            .assignToContact,
+            .postToVimeo,
+            .openInIBooks,
+            .postToFlickr,
+        ]
+        if #available(iOS 11.0, *) {
+            controller.excludedActivityTypes?.append(.markupAsPDF)
+        }
+        self.present(controller, animated: true, completion: nil)
+    }
+    
+    private func downloadImage(url: String, imageView: UIImageView, scrollView: UIScrollView) {
         guard let link = URL(string: url) else {
             return
         }
@@ -163,9 +208,6 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
                     imageView.center = CGPoint(x: SCREEN__WIDTH / 2, y: SCREEN__HEIGHT / 2)
                     scrollView.contentSize = CGSize(width: SCREEN__WIDTH, height: SCREEN__HEIGHT)
                 } else {
-                    var frame = containerView.frame
-                    frame.size.height = imageView.frame.height
-                    containerView.frame = frame
                     scrollView.contentSize = CGSize(width: SCREEN__WIDTH, height: imageView.frame.height)
                 }
             }
@@ -194,7 +236,7 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
             self.showImageView.frame = CGRect(x: 0, y: 0, width: SCREEN__WIDTH, height: SCREEN__WIDTH * (tempImageView.image?.size.height)! / (tempImageView.image?.size.width)!)
             self.showImageView.center = self.view.center
         } else {
-            let tempImageView = scrollView.viewWithTag(100 + self.currentIndex!)?.subviews.first?.subviews.first as! UIImageView
+            let tempImageView = scrollView.viewWithTag(100 + self.currentIndex!)?.subviews.first as! UIImageView
             self.showImageView.image = tempImageView.image
             self.showImageView.frame = CGRect(x: 0, y: 0, width: SCREEN__WIDTH, height: SCREEN__WIDTH * (tempImageView.image?.size.height)! / (tempImageView.image?.size.width)!)
             self.showImageView.center = self.view.center
@@ -203,9 +245,35 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
     
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         if scrollView != self.contentView {
-            return scrollView.subviews.last
+            return scrollView.subviews.first
         }
         return nil
+    }
+    
+    func scrollViewDidZoom(_ scrollView: UIScrollView) {
+        let targetView = self.viewForZooming(in: scrollView)!
+        let widthIsSamll = targetView.frame.width < scrollView.frame.width
+        let heightIsSamll = targetView.frame.height < scrollView.frame.height
+
+        if widthIsSamll {
+            var center = targetView.center
+            center.x = scrollView.frame.width / 2
+            targetView.center = center
+        } else {
+            var frame = targetView.frame
+            frame.origin.x = 0
+            targetView.frame = frame
+        }
+        
+        if heightIsSamll {
+            var center = targetView.center
+            center.y = scrollView.frame.height / 2
+            targetView.center = center
+        } else {
+            var frame = targetView.frame
+            frame.origin.y = 0
+            targetView.frame = frame
+        }
     }
     
     override var prefersStatusBarHidden: Bool {
