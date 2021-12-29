@@ -8,7 +8,7 @@
 import UIKit
 import Photos
 
-class MZImageBrowsingController: UIViewController, UIViewControllerTransitioningDelegate, UIScrollViewDelegate {
+open class MZImageBrowsingController: UIViewController, UIViewControllerTransitioningDelegate, UIScrollViewDelegate {
     
     lazy var showImageView: UIImageView = {
         let imageView = UIImageView()
@@ -45,7 +45,7 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
         return scrollView
     }()
     
-    required init?(coder: NSCoder) {
+    public required init?(coder: NSCoder) {
         super.init(coder: coder)
         self.transitioningDelegate = self
         self.modalPresentationStyle = .custom
@@ -59,21 +59,21 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
         self.modalPresentationCapturesStatusBarAppearance = true
     }
     
-    init(imageViewList: [UIImageView], currentIndex: Int) {
+    public init(imageViewList: [UIImageView], currentIndex: Int) {
         self.init()
         self.imageViewList = imageViewList
         self.currentIndex = currentIndex
         self.currentImageView = imageViewList[currentIndex]
     }
     
-    init(imageUrlList: [String], currentImageView: UIImageView, currentIndex: Int) {
+    public init(imageUrlList: [String], currentImageView: UIImageView, currentIndex: Int) {
         self.init()
         self.imageUrlList = imageUrlList
         self.currentImageView = currentImageView
         self.currentIndex = currentIndex
     }
     
-    override func viewDidLoad() {
+    open override func viewDidLoad() {
         super.viewDidLoad()
         self.initUI()
     }
@@ -215,16 +215,16 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
     }
     
     //MARK:- UIViewControllerTransitioningDelegate
-    func animationController(forPresented presented: UIViewController, presenting: UIViewController, source: UIViewController) -> UIViewControllerAnimatedTransitioning? {
+    public func animationController(forPresented presented: UIViewController, presenting: UIViewController, source: UIViewController) -> UIViewControllerAnimatedTransitioning? {
         return MZImageBrowsingTransitioning.transition(withTransitionType: .Present)
     }
     
-    func animationController(forDismissed dismissed: UIViewController) -> UIViewControllerAnimatedTransitioning? {
+    public func animationController(forDismissed dismissed: UIViewController) -> UIViewControllerAnimatedTransitioning? {
         return MZImageBrowsingTransitioning.transition(withTransitionType: .Dismiss)
     }
     
     //MARK:- UIScrollViewDelegate
-    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         if scrollView != self.contentView {
             return
         }
@@ -243,14 +243,14 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
         }
     }
     
-    func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+    public func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         if scrollView != self.contentView {
             return scrollView.subviews.first
         }
         return nil
     }
     
-    func scrollViewDidZoom(_ scrollView: UIScrollView) {
+    public func scrollViewDidZoom(_ scrollView: UIScrollView) {
         let targetView = self.viewForZooming(in: scrollView)!
         let widthIsSamll = targetView.frame.width < scrollView.frame.width
         let heightIsSamll = targetView.frame.height < scrollView.frame.height
@@ -276,7 +276,7 @@ class MZImageBrowsingController: UIViewController, UIViewControllerTransitioning
         }
     }
     
-    override var prefersStatusBarHidden: Bool {
+    open override var prefersStatusBarHidden: Bool {
         return true
     }
 }
