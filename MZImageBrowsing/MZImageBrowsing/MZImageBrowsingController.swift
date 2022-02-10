@@ -30,6 +30,7 @@ open class MZImageBrowsingController: UIViewController, UIViewControllerTransiti
         scrollView.contentSize = CGSize(width: (20 + SCREEN__WIDTH) * CGFloat((self.imageViewList == nil ? self.imageUrlList?.count : self.imageViewList?.count)!), height: SCREEN__HEIGHT)
         scrollView.isPagingEnabled = true
         scrollView.isDirectionalLockEnabled = true
+        scrollView.showsHorizontalScrollIndicator = false
         
         let tap = UITapGestureRecognizer.init(target: self, action: #selector(back))
         scrollView.addGestureRecognizer(tap)
@@ -43,6 +44,12 @@ open class MZImageBrowsingController: UIViewController, UIViewControllerTransiti
         scrollView.addGestureRecognizer(longTap)
         
         return scrollView
+    }()
+    private lazy var countLabel: UILabel = {
+        let label = UILabel(frame: CGRect(x: 20, y: 20, width: 100, height: 30))
+        label.textColor = .white
+        label.font = .systemFont(ofSize: 20)
+        return label
     }()
     
     public required init?(coder: NSCoder) {
@@ -82,12 +89,15 @@ open class MZImageBrowsingController: UIViewController, UIViewControllerTransiti
     private func initUI() {
         self.view.backgroundColor = .black
         self.view.addSubview(contentView)
+        self.view.addSubview(countLabel)
         
         if #available(iOS 11.0, *) {
             self.contentView.contentInsetAdjustmentBehavior = .never
         } else {
             self.automaticallyAdjustsScrollViewInsets = false
         }
+        
+        countLabel.text = "\(self.currentIndex! + 1)/\((self.imageViewList == nil ? self.imageUrlList?.count : self.imageViewList?.count)!)"
         
         for i in 0..<((self.imageViewList == nil ? self.imageUrlList?.count : self.imageViewList?.count)!) {
             let scrollView = UIScrollView.init(frame: CGRect(x: (SCREEN__WIDTH + 20) * CGFloat(i), y: 0, width: SCREEN__WIDTH, height: SCREEN__HEIGHT))
@@ -229,6 +239,8 @@ open class MZImageBrowsingController: UIViewController, UIViewControllerTransiti
             return
         }
         self.currentIndex = Int(scrollView.contentOffset.x / (SCREEN__WIDTH + 20.0))
+        countLabel.text = "\(self.currentIndex! + 1)/\((self.imageViewList == nil ? self.imageUrlList?.count : self.imageViewList?.count)!)"
+        
         if self.imageViewList != nil {
             let tempImageView = self.imageViewList![self.currentIndex!]
             self.currentImageView = tempImageView
