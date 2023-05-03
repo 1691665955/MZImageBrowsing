@@ -11,7 +11,7 @@
 
 #### Cocoapods 引入
 ```
-pod 'MZImageBrowsing', '~> 0.0.2'
+pod 'MZImageBrowsing', '~> 0.0.3'
 ```
 
 #### 使用

@@ -107,7 +107,16 @@ class MZImageBrowsingTransitioning: NSObject, UIViewControllerAnimatedTransition
         guard let superView = view.superview else {
             return view.frame
         }
-        let window = UIApplication.shared.delegate?.window!
+        let window = currentWindow()
         return superView.convert(view.frame, to: window)
+    }
+    
+    private func currentWindow() -> UIWindow? {
+        let app = UIApplication.shared
+        if let window = app.delegate?.window {
+            return window
+        } else {
+            return app.keyWindow
+        }
     }
 }
